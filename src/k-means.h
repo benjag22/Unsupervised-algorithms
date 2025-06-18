@@ -204,7 +204,7 @@ class Kmeans{
         }
 
         void printEuclideanMatrix() const {
-            int n = points.size();
+            int n = (int)points.size();
             std::cout << "Matriz de distancias Euclidianas:" << std::endl;
 
             std::cout << "    ";
