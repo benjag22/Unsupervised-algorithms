@@ -1,30 +1,6 @@
 #pragma once
 #include <bits/stdc++.h>
-
-double truncate(double number_val, int n)
-{
-    bool negative = false;
-    if (number_val == 0) {
-        return 0;
-    } else if (number_val < 0) {
-        number_val = -number_val;
-        negative = true;
-    }
-    double pre_digits = std::log10(number_val) + 1;
-    if (pre_digits < 17) {
-        double post_digits = 17 - pre_digits;
-        double factor = std::pow(10, post_digits);
-        number_val = std::round(number_val * factor) / factor;
-        factor = std::pow(10, n);
-        number_val = std::trunc(number_val * factor) / factor;
-    } else {
-        number_val = std::round(number_val);
-    }
-    if (negative) {
-        number_val = -number_val;
-    }
-    return number_val;
-}
+#include "truncate.h"
 
 struct Point {
     char name;
@@ -201,32 +177,5 @@ class Kmeans{
             printCentroids();
             drawGrid(iteration);
             std::cout << "\n" << std::string(50, '=') << std::endl;
-        }
-
-        void printEuclideanMatrix() const {
-            int n = (int)points.size();
-            std::cout << "Matriz de distancias Euclidianas:" << std::endl;
-
-            std::cout << "    ";
-            for (const auto& point : points) {
-                std::cout << std::setw(6) << point.name;
-            }
-            std::cout << std::endl;
-
-            for (int i = 0; i < n; ++i) {
-                std::cout << std::setw(3) << points[i].name << " ";
-                for (int j = 0; j < n; ++j) {
-                    if (i == j) {
-                        std::cout << std::setw(6) << "0";
-                    } else {
-                        double dx = points[i].x - points[j].x;
-                        double dy = points[i].y - points[j].y;
-                        double distance = truncate(sqrt(dx * dx + dy * dy), 2);
-                        std::cout << std::setw(6) << distance;
-                    }
-                }
-                std::cout << std::endl;
-            }
-            std::cout << std::endl;
         }
     };

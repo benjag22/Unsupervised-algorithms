@@ -1,0 +1,1 @@
+double truncate(double number_val, int n);
