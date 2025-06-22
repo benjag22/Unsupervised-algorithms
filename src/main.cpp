@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <random>
 
+#include "DBscan.h"
+#include "k-means.h"
 using namespace std;
 
 int height_grid, width_grid, action_taken, action_taken2,current_episode;
@@ -278,11 +280,26 @@ void Qlearning()
 
 void Sarsa()
 {
-    action_taken2 = action_selection();
-    move(action_taken2);
+    //If is the first state of episode, need the actual action
+    static bool first_step_of_episode = true;
+
+    if(first_step_of_episode) {
+        action_taken = action_selection();
+        first_step_of_episode = false;
+    }
+
+    move(action_taken);
     cum_reward = cum_reward + reward[x_pos][y_pos];
+    action_taken2 = action_selection();
     update_q_prev_state_sarsa();
     action_taken = action_taken2;
+
+    // Reset flag if is terminal state
+    if(((x_pos==goalx)&&(y_pos==goaly)) ||
+       ((environment==1)&&(x_pos==goalx)&&(y_pos==(goaly-1)))||
+       ((environment==2)&&(x_pos>0)&&(x_pos<goalx)&&(y_pos==0))) {
+        first_step_of_episode = true;
+    }
 }
 
 void Multi_print_grid()
@@ -316,67 +333,76 @@ int main(int argc, char* argv[])
 {
     srand(time(NULL));
     ofstream reward_output;
-    reward_output.open("rewards_data.csv");
-    if (!reward_output.is_open()) {
-        cout << "ERROR: No se pudo abrir el archivo CSV!" << endl;
-        return 1;
+
+    int algorithms[] = {1, 2};  // Q-learning, SARSA
+    int environments[] = {1, 2}; // Environment 1, 2
+
+    for(int alg : algorithms) {
+        for(int env : environments) {
+            algorithm = alg;
+            environment = env;
+            stochastic_actions = 0;
+            string filename = ((alg == 1) ? "qlearning" : "sarsa") +
+                              string("_env") + to_string(env) + ".csv";
+
+            ofstream reward_output;
+            reward_output.open(filename);
+            if (!reward_output.is_open()) {
+                cout << "ERROR: No se pudo abrir el archivo " << filename << "!" << endl;
+                continue;
+            }
+
+            reward_output << "Episode,Cumulative_Reward\n";
+
+            Initialize_environment();
+
+            cout << "\nRunning " << ((algorithm == 1) ? "Q-learning" : "SARSA")
+                 << " on Environment " << environment
+                 << " with " << ((stochastic_actions) ? "stochastic" : "deterministic") << " actions\n";
+            for(i=0; i<num_episodes; i++)
+            {
+                cout << "Episode " << i;
+                current_episode=i;
+                x_pos=init_x_pos;
+                y_pos=init_y_pos;
+                cum_reward=0;
+
+                int steps = 0;
+
+                if(algorithm==2)
+                {
+                    action_taken = action_selection();
+                }
+
+                while(!( ((x_pos==goalx)&&(y_pos==goaly)) ||((environment==1)&&(x_pos==goalx)&&(y_pos==(goaly-1)))||((environment==2)&&(x_pos>0)&&(x_pos<goalx)&&(y_pos==0)) ))
+                {
+                    if(algorithm==1)
+                    {
+                        Qlearning();
+                    }
+                    if(algorithm==2)
+                    {
+                        Sarsa();
+                    }
+                    steps++;
+                }
+
+                finalrw[i]=cum_reward;
+
+                reward_output << i << "," << finalrw[i] << "\n";
+                reward_output.flush();
+
+                cout << " - Reward: " << finalrw[i] << " - Steps: " << steps << "\n";
+
+                if(i % 100 == 0) {
+                    cout << "Progreso: " << (i*100)/num_episodes << "% completado\n";
+                }
+            }
+
+            reward_output.close();
+        }
     }
 
-    reward_output << "Episode,Cumulative_Reward\n";
-
-    Initialize_environment();
-
-    cout << "Running " << ((algorithm == 1) ? "Q-learning" : "SARSA")
-         << " on Environment " << environment
-         << " with " << ((stochastic_actions) ? "stochastic" : "deterministic") << " actions\n";
-
-    for(i=0;i<num_episodes;i++)
-    {
-        cout << "Episode " << i;
-        current_episode=i;
-        x_pos=init_x_pos;
-        y_pos=init_y_pos;
-        cum_reward=0;
-
-        int steps = 0;
-
-        if(algorithm==2)
-        {
-            action_taken = action_selection();
-        }
-
-        while(!( ((x_pos==goalx)&&(y_pos==goaly)) ||((environment==1)&&(x_pos==goalx)&&(y_pos==(goaly-1)))||((environment==2)&&(x_pos>0)&&(x_pos<goalx)&&(y_pos==0)) ))
-        {
-            if(algorithm==1)
-            {
-                Qlearning();
-            }
-            if(algorithm==2)
-            {
-                Sarsa();
-            }
-            steps++;
-        }
-
-        finalrw[i]=cum_reward;
-
-        reward_output << i << "," << finalrw[i] << "\n";
-        reward_output.flush();
-
-        cout << " - Reward: " << finalrw[i] << " - Steps: " << steps << "\n";
-
-        if(i % 100 == 0) {
-            cout << "Progreso: " << (i*100)/num_episodes << "% completado\n";
-        }
-    }
-
-    reward_output.close();
-    cout << "\nArchivo CSV creado: rewards_data.csv\n";
-
-    return 0;
-}
-
-/*int main() {
     std::cout << "=== Ejercicio 1 ===" << std::endl;
 
     Kmeans kmeans(3);
@@ -415,4 +441,4 @@ int main(int argc, char* argv[])
 
     dbscan.runWithDifferentEps(sqrt(10));
     return 0;
-}*/
+}
